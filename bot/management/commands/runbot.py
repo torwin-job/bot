@@ -1,8 +1,13 @@
 import os
 from dotenv import load_dotenv
-load_dotenv()
+from django.core.management.base import BaseCommand
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes, CallbackQueryHandler
+from services.service_logic import format_description, get_all_services, get_service_by_id
+from applications.service_logic import create_application
 import logging
 
+load_dotenv()
 
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
@@ -14,11 +19,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-from django.core.management.base import BaseCommand
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes, CallbackQueryHandler
-from services.service_logic import format_description, get_all_services, get_service_by_id
-from applications.service_logic import create_application
 
 AWAIT_START, CHOOSING_SERVICE, ENTER_NAME, ENTER_PHONE = range(4)
 
@@ -128,4 +128,4 @@ class Command(BaseCommand):
 
         application.add_handler(conv_handler)
         logger.info("Бот запущен и ожидает команды.")
-        application.run_polling() 
+        application.run_polling()
