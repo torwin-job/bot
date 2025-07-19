@@ -70,6 +70,12 @@ async def service_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['service_obj'] = service
     return ENTER_NAME
 
+async def already_applied(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data and context.user_data.get('application_created'):
+        await update.message.reply_text("Вы не можете создать больше одной заявки")
+        return ConversationHandler.END
+    return
+
 async def enter_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['name'] = update.message.text
     logger.info(f"Пользователь ввёл имя: {context.user_data['name']}")
@@ -77,7 +83,11 @@ async def enter_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ENTER_PHONE
 
 async def enter_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['phone'] = update.message.text
+    phone = update.message.text
+    if not phone.isdigit() or len(phone) < 5:
+        await update.message.reply_text("Пожалуйста, введите номер телефона, используя только цифры (минимум 5).")
+        return ENTER_PHONE
+    context.user_data['phone'] = phone
     logger.info(f"Пользователь ввёл телефон: {context.user_data['phone']}")
     try:
         service = context.user_data['service_obj']
@@ -87,6 +97,7 @@ async def enter_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
             service=service
         )
         logger.info(f"Заявка создана: имя={context.user_data['name']}, телефон={context.user_data['phone']}, услуга={service.name}")
+        context.user_data['application_created'] = True
         await update.message.reply_text("Спасибо! Ваша заявка принята.")
     except Exception as e:
         logger.error(f"Ошибка при создании заявки: {e}")
@@ -113,13 +124,16 @@ class Command(BaseCommand):
         conv_handler = ConversationHandler(
             entry_points=[CommandHandler('start', start)],
             states={
-                AWAIT_START: [MessageHandler(filters.Regex(r'(?i)^\s*услуги\s*$'), show_services)],
+                AWAIT_START: [
+                    MessageHandler(filters.Regex(r'(?i)^\s*услуги\s*$'), show_services),
+                    MessageHandler(filters.ALL, already_applied)
+                ],
                 CHOOSING_SERVICE: [CallbackQueryHandler(service_callback)],
                 ENTER_NAME: [
                     MessageHandler(filters.TEXT & ~filters.COMMAND, enter_name)
                 ],
                 ENTER_PHONE: [
-                    MessageHandler(filters.Regex(r"^\+?\d{5,}$"), enter_phone)
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, enter_phone)
                 ],
             },
             fallbacks=[CommandHandler('start', start), CommandHandler('cancel', cancel)],
@@ -127,5 +141,6 @@ class Command(BaseCommand):
         )
 
         application.add_handler(conv_handler)
+        application.add_handler(MessageHandler(filters.ALL, already_applied))
         logger.info("Бот запущен и ожидает команды.")
         application.run_polling()
