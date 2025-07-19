@@ -65,6 +65,3 @@ applications/
 bot/
   management/commands/runbot.py  # Основной скрипт Telegram-бота
 ```
-
-## Лицензия
-MIT 
