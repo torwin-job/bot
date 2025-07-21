@@ -43,7 +43,6 @@ async def show_services(update: Update, context: ContextTypes.DEFAULT_TYPE):
         desc = format_description(service.description)
         text = f"💼 <b>{service.name}</b>\n{desc}"
         await update.message.reply_text(text, parse_mode="HTML")
-    # После этого — кнопки для выбора услуги
     keyboard = [
         [InlineKeyboardButton(service.name, callback_data=f"service_{service.id}")]
         for service in services
@@ -113,7 +112,6 @@ class Command(BaseCommand):
     help = 'Запуск Telegram-бота'
 
     def handle(self, *args, **options):
-        # Временно прописываем токен прямо в код для отладки (убрать после проверки!)
         TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
         logger.info(f"Используемый токен: {TOKEN}")
         if not TOKEN:
